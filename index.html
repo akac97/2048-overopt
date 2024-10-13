@@ -44,6 +44,7 @@
             background-color: #bbada0; /* Background for the grid */
             border-radius: 5px; /* Rounded corners for the grid */
             padding: 10px; /* Padding for overall grid area */
+            position: relative; /* To position the overlay */
         }
         .tile {
             background: #cdc1b4;
@@ -72,6 +73,24 @@
         .tile-512 { background: #edc850; }
         .tile-1024 { background: #edc53f; }
         .tile-2048 { background: #edc22e; }
+        
+        /* Overlay for the 3x3 grid */
+        .grid-overlay {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            position: absolute; /* Overlay on top of game container */
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1; /* Ensures the grid is above the game container */
+            pointer-events: none; /* Allows interaction with tiles underneath */
+        }
+        .grid-line {
+            border: 1px solid rgba(255, 255, 255, 0.5); /* White lines */
+        }
+        
         @media (max-width: 600px) {
             .tile {
                 padding: 15px;
@@ -87,7 +106,19 @@
         <h1>2048</h1>
         <div class="score" id="score">Score: 0</div>
     </div>
-    <div class="game-container" id="game-board"></div>
+    <div class="game-container" id="game-board">
+        <div class="grid-overlay">
+            <div class="grid-line"></div>
+            <div class="grid-line"></div>
+            <div class="grid-line"></div>
+            <div class="grid-line"></div>
+            <div class="grid-line"></div>
+            <div class="grid-line"></div>
+            <div class="grid-line"></div>
+            <div class="grid-line"></div>
+            <div class="grid-line"></div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -122,7 +153,7 @@
         if (!needsUpdate) {
             needsUpdate = true;
             window.requestAnimationFrame(() => {
-                gameBoard.innerHTML = ''; // Clear previous tiles
+                gameBoard.querySelectorAll('.tile').forEach(tile => tile.remove()); // Clear previous tiles
                 newGrid.forEach((row) => {
                     row.forEach((tileValue) => {
                         const tile = createTile(tileValue); // Create tile elements
