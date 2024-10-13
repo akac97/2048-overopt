@@ -44,14 +44,18 @@
             width: 100%;
         }
         .tile {
-            background: #cdc1b4;
+            width: 100px;  /* Fixed width */
+            height: 100px; /* Fixed height */
             border-radius: 5px;
             padding: 20px;
             font-size: 2rem;
             text-align: center;
             font-weight: bold;
             color: white;
-            transition: background-color 0.2s;
+            transition: background-color 0.2s, transform 0.2s;
+            display: flex; 
+            justify-content: center; 
+            align-items: center; /* Center content */
         }
         .tile-2 { background: #eee4da; color: #776e65; }
         .tile-4 { background: #ede0c8; color: #776e65; }
@@ -64,9 +68,11 @@
         .tile-512 { background: #edc850; }
         .tile-1024 { background: #edc53f; }
         .tile-2048 { background: #edc22e; }
+
         @media (max-width: 600px) {
             .tile {
-                padding: 15px;
+                width: 75px;  /* Adjust size for smaller screens */
+                height: 75px;
                 font-size: 1.5rem;
             }
         }
