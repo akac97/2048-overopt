@@ -18,7 +18,7 @@
         .game-wrapper {
             display: flex;
             flex-direction: column;
-            align-items: center; /* Center the header and board */
+            align-items: center;
             width: 80vw;
             max-width: 500px;
         }
@@ -38,9 +38,12 @@
         .game-container {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            grid-gap: 10px;
+            grid-gap: 10px; /* Gap between tiles */
             width: 100%;
             aspect-ratio: 1 / 1; /* Ensures the grid is always square */
+            padding: 10px; /* Padding for overall grid area */
+            background-color: #bbada0; /* Background for grid container */
+            border-radius: 5px; /* Rounded corners for the grid */
         }
         .tile {
             background: #cdc1b4;
