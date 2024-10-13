@@ -16,6 +16,7 @@
             height: 100vh;
             margin: 0;
             background: #faf8ef;
+            position: relative;
         }
         .game-wrapper {
             display: flex;
@@ -27,8 +28,26 @@
         .header {
             display: flex;
             justify-content: space-between;
+            align-items: center;
             width: 100%;
             margin-bottom: 20px;
+        }
+        .title {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        .reset-button {
+            background: #8f7d6f;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.3s;
+        }
+        .reset-button:hover {
+            background: #7a6b58;
         }
         .score {
             background: #bbada0;
@@ -70,6 +89,37 @@
         .tile-1024 { background: #edc53f; }
         .tile-2048 { background: #edc22e; }
 
+        /* Game Over Overlay Styles */
+        .game-over {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 2rem;
+            display: none; /* Hidden by default */
+        }
+        .game-over button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 1.5rem;
+            background: #8f7d6f;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .game-over button:hover {
+            background: #7a6b58;
+        }
+
         @media (max-width: 600px) {
             .tile {
                 width: 75px;  /* Adjust size for smaller screens */
@@ -83,7 +133,7 @@
 
 <div class="game-wrapper">
     <div class="header">
-        <h1>2048</h1>
+        <div class="title">2048</div>
         <div class="score" id="score">Score: 0</div>
     </div>
     <div class="game-container" id="game-board">
@@ -91,9 +141,17 @@
     </div>
 </div>
 
+<!-- Game Over Overlay -->
+<div class="game-over" id="gameOver">
+    <div>Game Over!</div>
+    <button id="resetButton">Reset Game</button>
+</div>
+
 <script>
     const gameBoard = document.getElementById('game-board');
     const scoreElement = document.getElementById('score');
+    const resetButton = document.getElementById('resetButton');
+    const gameOverOverlay = document.getElementById('gameOver');
     let grid = [];
     let score = 0;
 
@@ -105,6 +163,7 @@
         spawnTile();
         spawnTile();
         updateBoard();
+        gameOverOverlay.style.display = 'none'; // Hide game over overlay
     }
 
     // Update the score display
@@ -169,7 +228,7 @@
             spawnTile();
             updateBoard();
             if (checkGameOver()) {
-                alert('Game Over!');
+                gameOverOverlay.style.display = 'flex'; // Show game over overlay
             }
         }
     }
@@ -192,41 +251,47 @@
     function checkGameOver() {
         for (let row = 0; row < 4; row++) {
             for (let col = 0; col < 4; col++) {
-                if (grid[row][col] === 0) return false;
-                if (col < 3 && grid[row][col] === grid[row][col + 1]) return false;
-                if (row < 3 && grid[row][col] === grid[row + 1][col]) return false;
+                if (grid[row][col] === 0) return false; // Empty tile
+                if (row < 3 && grid[row][col] === grid[row + 1][col]) return false; // Vertical match
+                if (col < 3 && grid[row][col] === grid[row][col + 1]) return false; // Horizontal match
             }
         }
-        return true;
+        return true; // No moves left
     }
 
-    // Touch events for swipe control
+    // Initialize touch controls
     let touchStartX = 0;
     let touchStartY = 0;
-    let touchEndX = 0;
-    let touchEndY = 0;
 
-    function handleTouchStart(event) {
-        touchStartX = event.touches[0].clientX;
-        touchStartY = event.touches[0].clientY;
+    function handleTouchStart(e) {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
     }
 
-    function handleTouchMove(event) {
-        touchEndX = event.touches[0].clientX;
-        touchEndY = event.touches[0].clientY;
+    function handleTouchMove(e) {
+        e.preventDefault(); // Prevent scrolling
     }
 
-    function handleTouchEnd() {
-        const deltaX = touchEndX - touchStartX;
-        const deltaY = touchEndY - touchStartY;
+    function handleTouchEnd(e) {
+        const touchEndX = e.changedTouches[0].clientX;
+        const touchEndY = e.changedTouches[0].clientY;
 
-        if (Math.abs(deltaX) > Math.abs(deltaY)) {
-            move(deltaX > 0 ? 'right' : 'left');
+        const diffX = touchEndX - touchStartX;
+        const diffY = touchEndY - touchStartY;
+
+        const absDiffX = Math.abs(diffX);
+        const absDiffY = Math.abs(diffY);
+
+        if (absDiffX > absDiffY) {
+            if (diffX > 0) move('right');
+            else move('left');
         } else {
-            move(deltaY > 0 ? 'down' : 'up');
+            if (diffY > 0) move('down');
+            else move('up');
         }
     }
 
+    // Event listeners for touch events
     gameBoard.addEventListener('touchstart', handleTouchStart);
     gameBoard.addEventListener('touchmove', handleTouchMove);
     gameBoard.addEventListener('touchend', handleTouchEnd);
@@ -238,6 +303,9 @@
         if (e.key === 'ArrowUp') move('up');
         if (e.key === 'ArrowDown') move('down');
     });
+
+    // Reset the game on button click
+    resetButton.addEventListener('click', initGame);
 
     // Start the game
     initGame();
