@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>2048 Game</title>
     <style>
-        * { box-sizing: border-box; }
+        * {
+            box-sizing: border-box;
+        }
         body {
             font-family: Arial, sans-serif;
             display: flex;
@@ -18,7 +20,7 @@
         .game-wrapper {
             display: flex;
             flex-direction: column;
-            align-items: center;
+            align-items: flex-start;
             width: 80vw;
             max-width: 500px;
         }
@@ -38,29 +40,18 @@
         .game-container {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            grid-gap: 10px; /* Gap between tiles */
+            grid-gap: 10px;
             width: 100%;
-            aspect-ratio: 1 / 1; /* Keeps the grid square */
-            background-color: #bbada0; /* Background for the grid */
-            border-radius: 5px; /* Rounded corners for the grid */
-            padding: 10px; /* Padding for overall grid area */
-            position: relative; /* To position the overlay */
         }
         .tile {
             background: #cdc1b4;
             border-radius: 5px;
-            width: 100%;
-            height: 100%; /* Ensures tiles occupy full grid space */
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            padding: 20px;
             font-size: 2rem;
+            text-align: center;
             font-weight: bold;
             color: white;
-            transition: background-color 0.3s, transform 0.3s; /* Smooth transitions */
-        }
-        .tile[data-value="0"] {
-            visibility: hidden; /* Hide empty tiles */
+            transition: background-color 0.2s;
         }
         .tile-2 { background: #eee4da; color: #776e65; }
         .tile-4 { background: #ede0c8; color: #776e65; }
@@ -73,24 +64,6 @@
         .tile-512 { background: #edc850; }
         .tile-1024 { background: #edc53f; }
         .tile-2048 { background: #edc22e; }
-        
-        /* Overlay for the 3x3 grid */
-        .grid-overlay {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(3, 1fr);
-            position: absolute; /* Overlay on top of game container */
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            z-index: 1; /* Ensures the grid is above the game container */
-            pointer-events: none; /* Allows interaction with tiles underneath */
-        }
-        .grid-line {
-            border: 1px solid rgba(255, 255, 255, 0.5); /* White lines */
-        }
-        
         @media (max-width: 600px) {
             .tile {
                 padding: 15px;
@@ -107,112 +80,151 @@
         <div class="score" id="score">Score: 0</div>
     </div>
     <div class="game-container" id="game-board">
-        <div class="grid-overlay">
-            <div class="grid-line"></div>
-            <div class="grid-line"></div>
-            <div class="grid-line"></div>
-            <div class="grid-line"></div>
-            <div class="grid-line"></div>
-            <div class="grid-line"></div>
-            <div class="grid-line"></div>
-            <div class="grid-line"></div>
-            <div class="grid-line"></div>
-        </div>
+        <!-- Tiles will be dynamically generated -->
     </div>
 </div>
 
 <script>
     const gameBoard = document.getElementById('game-board');
     const scoreElement = document.getElementById('score');
-    let worker = new Worker('2048-worker.js');
+    let grid = [];
     let score = 0;
 
-    // Efficient batch DOM update using requestAnimationFrame
-    let needsUpdate = false;
+    // Initialize game
+    function initGame() {
+        grid = Array.from({ length: 4 }, () => Array(4).fill(0));
+        score = 0;
+        updateScore();
+        spawnTile();
+        spawnTile();
+        updateBoard();
+    }
 
-    function updateScore(newScore) {
-        if (score !== newScore) {
-            score = newScore;
-            scoreElement.textContent = `Score: ${score}`;
+    // Update the score display
+    function updateScore() {
+        scoreElement.textContent = `Score: ${score}`;
+    }
+
+    // Randomly spawn a tile (2 or 4)
+    function spawnTile() {
+        const emptyTiles = [];
+        for (let row = 0; row < 4; row++) {
+            for (let col = 0; col < 4; col++) {
+                if (grid[row][col] === 0) {
+                    emptyTiles.push({ row, col });
+                }
+            }
+        }
+        if (emptyTiles.length) {
+            const { row, col } = emptyTiles[Math.floor(Math.random() * emptyTiles.length)];
+            grid[row][col] = Math.random() < 0.9 ? 2 : 4;
         }
     }
 
-    function createTile(value) {
-        const tile = document.createElement('div');
-        tile.classList.add('tile');
-        tile.setAttribute('data-value', value);
-        if (value > 0) {
-            tile.textContent = value;
-            tile.classList.add(`tile-${value}`);
+    // Update the game board visually
+    function updateBoard() {
+        const tiles = [];
+        for (let row = 0; row < 4; row++) {
+            for (let col = 0; col < 4; col++) {
+                const tileValue = grid[row][col];
+                const tile = tileValue > 0 ? `<div class="tile tile-${tileValue}">${tileValue}</div>` : '<div class="tile"></div>';
+                tiles.push(tile);
+            }
         }
-        return tile;
+        gameBoard.innerHTML = tiles.join('');
     }
 
-    // Update the grid
-    function updateBoard(newGrid) {
-        if (!needsUpdate) {
-            needsUpdate = true;
-            window.requestAnimationFrame(() => {
-                gameBoard.querySelectorAll('.tile').forEach(tile => tile.remove()); // Clear previous tiles
-                newGrid.forEach((row) => {
-                    row.forEach((tileValue) => {
-                        const tile = createTile(tileValue); // Create tile elements
-                        gameBoard.appendChild(tile); // Add tile to the grid
-                    });
-                });
-                needsUpdate = false; // Reset needsUpdate flag
-            });
+    // Move the tiles based on direction (arrow key or swipe)
+    function move(direction) {
+        let moved = false;
+        if (direction === 'left' || direction === 'right') {
+            for (let row = 0; row < 4; row++) {
+                const newRow = direction === 'left' ? moveRowLeft(grid[row]) : moveRowLeft(grid[row].reverse()).reverse();
+                if (grid[row].toString() !== newRow.toString()) {
+                    grid[row] = newRow;
+                    moved = true;
+                }
+            }
+        } else if (direction === 'up' || direction === 'down') {
+            for (let col = 0; col < 4; col++) {
+                const column = grid.map(row => row[col]);
+                const newColumn = direction === 'up' ? moveRowLeft(column) : moveRowLeft(column.reverse()).reverse();
+                for (let row = 0; row < 4; row++) {
+                    if (grid[row][col] !== newColumn[row]) {
+                        grid[row][col] = newColumn[row];
+                        moved = true;
+                    }
+                }
+            }
+        }
+
+        if (moved) {
+            spawnTile();
+            updateBoard();
+            if (checkGameOver()) {
+                alert('Game Over!');
+            }
         }
     }
 
-    async function initGame() {
-        worker.postMessage({ type: 'init' }); // Send init message to worker
-    }
-
-    async function move(direction) {
-        worker.postMessage({ type: 'move', direction }); // Send move command to worker
-    }
-
-    worker.onmessage = function(e) {
-        const { type, grid, score, gameOver } = e.data; // Extract data from worker
-        if (type === 'update') {
-            updateBoard(grid); // Update the grid
-            updateScore(score); // Update the score
-        } else if (type === 'gameOver') {
-            alert('Game Over!'); // Alert game over
-            initGame(); // Restart game on game over
+    // Helper function to move a row or column left
+    function moveRowLeft(row) {
+        const filteredRow = row.filter(val => val);
+        for (let i = 0; i < filteredRow.length - 1; i++) {
+            if (filteredRow[i] === filteredRow[i + 1]) {
+                filteredRow[i] *= 2;
+                score += filteredRow[i];
+                filteredRow.splice(i + 1, 1);
+            }
         }
-    };
+        updateScore();
+        return [...filteredRow, ...Array(4 - filteredRow.length).fill(0)];
+    }
 
-    // Touch controls
+    // Check for game over condition
+    function checkGameOver() {
+        for (let row = 0; row < 4; row++) {
+            for (let col = 0; col < 4; col++) {
+                if (grid[row][col] === 0) return false;
+                if (col < 3 && grid[row][col] === grid[row][col + 1]) return false;
+                if (row < 3 && grid[row][col] === grid[row + 1][col]) return false;
+            }
+        }
+        return true;
+    }
+
+    // Touch events for swipe control
     let touchStartX = 0;
     let touchStartY = 0;
+    let touchEndX = 0;
+    let touchEndY = 0;
 
     function handleTouchStart(event) {
         touchStartX = event.touches[0].clientX;
         touchStartY = event.touches[0].clientY;
     }
 
-    function handleTouchEnd(event) {
-        const touchEndX = event.changedTouches[0].clientX;
-        const touchEndY = event.changedTouches[0].clientY;
+    function handleTouchMove(event) {
+        touchEndX = event.touches[0].clientX;
+        touchEndY = event.touches[0].clientY;
+    }
 
+    function handleTouchEnd() {
         const deltaX = touchEndX - touchStartX;
         const deltaY = touchEndY - touchStartY;
 
         if (Math.abs(deltaX) > Math.abs(deltaY)) {
-            if (deltaX > 0) move('right');
-            else move('left');
+            move(deltaX > 0 ? 'right' : 'left');
         } else {
-            if (deltaY > 0) move('down');
-            else move('up');
+            move(deltaY > 0 ? 'down' : 'up');
         }
     }
 
     gameBoard.addEventListener('touchstart', handleTouchStart);
+    gameBoard.addEventListener('touchmove', handleTouchMove);
     gameBoard.addEventListener('touchend', handleTouchEnd);
 
-    // Keyboard controls
+    // Listen for arrow key presses
     window.addEventListener('keydown', (e) => {
         if (e.key === 'ArrowLeft') move('left');
         if (e.key === 'ArrowRight') move('right');
@@ -220,7 +232,8 @@
         if (e.key === 'ArrowDown') move('down');
     });
 
-    initGame(); // Initialize the game
+    // Start the game
+    initGame();
 </script>
 
 </body>
