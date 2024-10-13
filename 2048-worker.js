@@ -44,7 +44,7 @@ function move(direction) {
     let moved = false;
     if (direction === 'left' || direction === 'right') {
         for (let row = 0; row < 4; row++) {
-            let newRow = direction === 'left' ? moveRowLeft(grid[row]) : moveRowLeft(grid[row].slice().reverse()).reverse();
+            const newRow = direction === 'left' ? moveRowLeft(grid[row]) : moveRowLeft(grid[row].slice().reverse()).reverse();
             if (newRow.toString() !== grid[row].toString()) {
                 moved = true;
                 grid[row] = newRow; // Update grid with new row
