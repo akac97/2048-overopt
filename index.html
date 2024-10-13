@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2048 Game - Optimized</title>
+    <title>2048 Game</title>
     <style>
         * { box-sizing: border-box; }
         body {
@@ -40,16 +40,25 @@
             grid-template-columns: repeat(4, 1fr);
             grid-gap: 10px;
             width: 100%;
+            aspect-ratio: 1 / 1; /* Ensures the grid is always square */
         }
         .tile {
             background: #cdc1b4;
             border-radius: 5px;
+            width: 100%;
             padding: 20px;
             font-size: 2rem;
-            text-align: center;
             font-weight: bold;
             color: white;
+            text-align: center;
+            line-height: 1; /* Prevents text from stretching the tile */
+            display: flex;
+            justify-content: center;
+            align-items: center;
             transition: background-color 0.2s, transform 0.1s;
+        }
+        .tile[data-value="0"] {
+            visibility: hidden; /* Hide empty tiles */
         }
         .tile-2 { background: #eee4da; color: #776e65; }
         .tile-4 { background: #ede0c8; color: #776e65; }
@@ -104,10 +113,11 @@
             needsUpdate = true;
             window.requestAnimationFrame(() => {
                 gameBoard.innerHTML = '';
-                newGrid.forEach((row, rowIndex) => {
-                    row.forEach((tileValue, colIndex) => {
+                newGrid.forEach((row) => {
+                    row.forEach((tileValue) => {
                         const tile = document.createElement('div');
                         tile.classList.add('tile');
+                        tile.setAttribute('data-value', tileValue);
                         if (tileValue > 0) {
                             tile.textContent = tileValue;
                             tile.classList.add(`tile-${tileValue}`);
