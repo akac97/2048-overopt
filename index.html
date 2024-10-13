@@ -18,7 +18,7 @@
         .game-wrapper {
             display: flex;
             flex-direction: column;
-            align-items: flex-start;
+            align-items: center; /* Center the header and board */
             width: 80vw;
             max-width: 500px;
         }
@@ -112,7 +112,7 @@
         if (!needsUpdate) {
             needsUpdate = true;
             window.requestAnimationFrame(() => {
-                gameBoard.innerHTML = '';
+                gameBoard.innerHTML = ''; // Clear previous tiles
                 newGrid.forEach((row) => {
                     row.forEach((tileValue) => {
                         const tile = document.createElement('div');
@@ -122,29 +122,30 @@
                             tile.textContent = tileValue;
                             tile.classList.add(`tile-${tileValue}`);
                         }
-                        gameBoard.appendChild(tile);
+                        gameBoard.appendChild(tile); // Add tile to the grid
                     });
                 });
-                needsUpdate = false;
+                needsUpdate = false; // Reset needsUpdate flag
             });
         }
     }
 
     async function initGame() {
-        worker.postMessage({ type: 'init' });
+        worker.postMessage({ type: 'init' }); // Send init message to worker
     }
 
     async function move(direction) {
-        worker.postMessage({ type: 'move', direction });
+        worker.postMessage({ type: 'move', direction }); // Send move command to worker
     }
 
     worker.onmessage = function(e) {
-        const { type, grid, score, gameOver } = e.data;
+        const { type, grid, score, gameOver } = e.data; // Extract data from worker
         if (type === 'update') {
-            updateBoard(grid);
-            updateScore(score);
+            updateBoard(grid); // Update the grid
+            updateScore(score); // Update the score
         } else if (type === 'gameOver') {
-            alert('Game Over!');
+            alert('Game Over!'); // Alert game over
+            initGame(); // Restart game on game over
         }
     };
 
@@ -195,7 +196,7 @@
         if (e.key === 'ArrowDown') move('down');
     });
 
-    initGame();
+    initGame(); // Initialize the game
 </script>
 
 </body>
