@@ -24,30 +24,53 @@ function spawnTile() {
     }
     if (emptyTiles.length > 0) {
         const { row, col } = emptyTiles[Math.floor(Math.random() * emptyTiles.length)];
-        grid[row][col] = Math.random() < 0.9 ? 2 : 4; // Spawn either a 2 or 4
+        grid[row][col] = Math.random() < 0.9 ? 2 : 4; // Spawn 2 or 4
     }
 }
 
 function moveRowLeft(row) {
-    row = row.filter(val => val); // Remove all zeroes
-    for (let i = 0; i < row.length - 1; i++) {
-        if (row[i] === row[i + 1]) { // Merge tiles
-            row[i] *= 2;
-            score += row[i];
-            row.splice(i + 1, 1);
+    const newRow = row.filter(value => value !== 0); // Remove zeros
+    for (let i = 0; i < newRow.length - 1; i++) {
+        if (newRow[i] === newRow[i + 1]) {
+            newRow[i] *= 2; // Merge tiles
+            score += newRow[i]; // Update score
+            newRow.splice(i + 1, 1); // Remove merged tile
         }
     }
-    return [...row, ...Array(4 - row.length).fill(0)]; // Fill with zeroes
+    return [...newRow, ...Array(4 - newRow.length).fill(0)]; // Fill with zeros
 }
 
 function move(direction) {
     let moved = false;
-    if (direction === 'left' || direction === 'right') {
+
+    if (direction === 'left') {
         for (let row = 0; row < 4; row++) {
-            const newRow = direction === 'left' ? moveRowLeft(grid[row]) : moveRowLeft(grid[row].slice().reverse()).reverse();
-            if (newRow.toString() !== grid[row].toString()) {
-                moved = true;
+            const newRow = moveRowLeft(grid[row]); // Move and merge row
+            if (grid[row].toString() !== newRow.toString()) {
+                moved = true; // Mark if moved
                 grid[row] = newRow; // Update grid with new row
+            }
+        }
+    } else if (direction === 'right') {
+        for (let row = 0; row < 4; row++) {
+            const newRow = moveRowLeft(grid[row].reverse()).reverse(); // Move and merge row
+            if (grid[row].toString() !== newRow.toString()) {
+                moved = true; // Mark if moved
+                grid[row] = newRow; // Update grid with new row
+            }
+        }
+    } else if (direction === 'down') {
+        for (let col = 0; col < 4; col++) {
+            let newCol = [];
+            for (let row = 0; row < 4; row++) {
+                newCol.push(grid[row][col]);
+            }
+            newCol = moveRowLeft(newCol.reverse()).reverse(); // Move and merge column
+            for (let row = 0; row < 4; row++) {
+                if (grid[row][col] !== newCol[row]) {
+                    moved = true; // Mark if moved
+                    grid[row][col] = newCol[row]; // Update grid with new column
+                }
             }
         }
     } else {
@@ -56,10 +79,10 @@ function move(direction) {
             for (let row = 0; row < 4; row++) {
                 newCol.push(grid[row][col]);
             }
-            newCol = direction === 'up' ? moveRowLeft(newCol) : moveRowLeft(newCol.reverse()).reverse();
+            newCol = moveRowLeft(newCol); // Move and merge column
             for (let row = 0; row < 4; row++) {
                 if (grid[row][col] !== newCol[row]) {
-                    moved = true;
+                    moved = true; // Mark if moved
                     grid[row][col] = newCol[row]; // Update grid with new column
                 }
             }
@@ -67,30 +90,16 @@ function move(direction) {
     }
 
     if (moved) {
-        spawnTile();
-        postUpdate();
-        if (checkGameOver()) {
-            postMessage({ type: 'gameOver' });
-        }
+        spawnTile(); // Spawn a new tile after moving
+        postUpdate(); // Send updated grid and score
     }
-}
-
-function checkGameOver() {
-    for (let row = 0; row < 4; row++) {
-        for (let col = 0; col < 4; col++) {
-            if (grid[row][col] === 0) return false;
-            if (col < 3 && grid[row][col] === grid[row][col + 1]) return false;
-            if (row < 3 && grid[row][col] === grid[row + 1][col]) return false;
-        }
-    }
-    return true;
 }
 
 onmessage = function(e) {
     const { type, direction } = e.data;
     if (type === 'init') {
-        initGame();
+        initGame(); // Initialize the game
     } else if (type === 'move') {
-        move(direction);
+        move(direction); // Handle move
     }
 };
