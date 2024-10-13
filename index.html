@@ -40,25 +40,23 @@
             grid-template-columns: repeat(4, 1fr);
             grid-gap: 10px; /* Gap between tiles */
             width: 100%;
-            aspect-ratio: 1 / 1; /* Ensures the grid is always square */
-            padding: 10px; /* Padding for overall grid area */
-            background-color: #bbada0; /* Background for grid container */
+            aspect-ratio: 1 / 1; /* Keeps the grid square */
+            background-color: #bbada0; /* Background for the grid */
             border-radius: 5px; /* Rounded corners for the grid */
+            padding: 10px; /* Padding for overall grid area */
         }
         .tile {
             background: #cdc1b4;
             border-radius: 5px;
             width: 100%;
-            padding: 20px;
-            font-size: 2rem;
-            font-weight: bold;
-            color: white;
-            text-align: center;
-            line-height: 1; /* Prevents text from stretching the tile */
+            height: 100%; /* Ensures tiles occupy full grid space */
             display: flex;
             justify-content: center;
             align-items: center;
-            transition: background-color 0.2s, transform 0.2s; /* Adjusted transition for smoother animations */
+            font-size: 2rem;
+            font-weight: bold;
+            color: white;
+            transition: background-color 0.3s, transform 0.3s; /* Smooth transitions */
         }
         .tile[data-value="0"] {
             visibility: hidden; /* Hide empty tiles */
@@ -89,9 +87,7 @@
         <h1>2048</h1>
         <div class="score" id="score">Score: 0</div>
     </div>
-    <div class="game-container" id="game-board">
-        <!-- Tiles dynamically generated -->
-    </div>
+    <div class="game-container" id="game-board"></div>
 </div>
 
 <script>
@@ -110,7 +106,18 @@
         }
     }
 
-    // Update the grid using requestAnimationFrame to ensure smoothness
+    function createTile(value) {
+        const tile = document.createElement('div');
+        tile.classList.add('tile');
+        tile.setAttribute('data-value', value);
+        if (value > 0) {
+            tile.textContent = value;
+            tile.classList.add(`tile-${value}`);
+        }
+        return tile;
+    }
+
+    // Update the grid
     function updateBoard(newGrid) {
         if (!needsUpdate) {
             needsUpdate = true;
@@ -118,13 +125,7 @@
                 gameBoard.innerHTML = ''; // Clear previous tiles
                 newGrid.forEach((row) => {
                     row.forEach((tileValue) => {
-                        const tile = document.createElement('div');
-                        tile.classList.add('tile');
-                        tile.setAttribute('data-value', tileValue);
-                        if (tileValue > 0) {
-                            tile.textContent = tileValue;
-                            tile.classList.add(`tile-${tileValue}`);
-                        }
+                        const tile = createTile(tileValue); // Create tile elements
                         gameBoard.appendChild(tile); // Add tile to the grid
                     });
                 });
@@ -152,43 +153,32 @@
         }
     };
 
-    // Touch controls (optimized)
+    // Touch controls
     let touchStartX = 0;
     let touchStartY = 0;
-    let touchEndX = 0;
-    let touchEndY = 0;
 
     function handleTouchStart(event) {
         touchStartX = event.touches[0].clientX;
         touchStartY = event.touches[0].clientY;
     }
 
-    function handleTouchMove(event) {
-        touchEndX = event.touches[0].clientX;
-        touchEndY = event.touches[0].clientY;
-    }
+    function handleTouchEnd(event) {
+        const touchEndX = event.changedTouches[0].clientX;
+        const touchEndY = event.changedTouches[0].clientY;
 
-    function handleTouchEnd() {
         const deltaX = touchEndX - touchStartX;
         const deltaY = touchEndY - touchStartY;
 
         if (Math.abs(deltaX) > Math.abs(deltaY)) {
-            if (deltaX > 0) {
-                move('right');
-            } else {
-                move('left');
-            }
+            if (deltaX > 0) move('right');
+            else move('left');
         } else {
-            if (deltaY > 0) {
-                move('down');
-            } else {
-                move('up');
-            }
+            if (deltaY > 0) move('down');
+            else move('up');
         }
     }
 
     gameBoard.addEventListener('touchstart', handleTouchStart);
-    gameBoard.addEventListener('touchmove', handleTouchMove);
     gameBoard.addEventListener('touchend', handleTouchEnd);
 
     // Keyboard controls
