@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2048 Game - Optimized</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: #faf8ef;
+        }
+        .game-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            width: 80vw;
+            max-width: 500px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        .score {
+            background: #bbada0;
+            padding: 15px;
+            border-radius: 5px;
+            font-size: 1.5rem;
+            color: white;
+        }
+        .game-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-gap: 10px;
+            width: 100%;
+        }
+        .tile {
+            background: #cdc1b4;
+            border-radius: 5px;
+            padding: 20px;
+            font-size: 2rem;
+            text-align: center;
+            font-weight: bold;
+            color: white;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .tile-2 { background: #eee4da; color: #776e65; }
+        .tile-4 { background: #ede0c8; color: #776e65; }
+        .tile-8 { background: #f2b179; }
+        .tile-16 { background: #f59563; }
+        .tile-32 { background: #f67c5f; }
+        .tile-64 { background: #f65e3b; }
+        .tile-128 { background: #edcf72; }
+        .tile-256 { background: #edcc61; }
+        .tile-512 { background: #edc850; }
+        .tile-1024 { background: #edc53f; }
+        .tile-2048 { background: #edc22e; }
+        @media (max-width: 600px) {
+            .tile {
+                padding: 15px;
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="game-wrapper">
+    <div class="header">
+        <h1>2048</h1>
+        <div class="score" id="score">Score: 0</div>
+    </div>
+    <div class="game-container" id="game-board">
+        <!-- Tiles dynamically generated -->
+    </div>
+</div>
+
+<script>
+    const gameBoard = document.getElementById('game-board');
+    const scoreElement = document.getElementById('score');
+    let worker = new Worker('2048-worker.js');
+    let score = 0;
+
+    // Efficient batch DOM update using requestAnimationFrame
+    let needsUpdate = false;
+
+    function updateScore(newScore) {
+        if (score !== newScore) {
+            score = newScore;
+            scoreElement.textContent = `Score: ${score}`;
+        }
+    }
+
+    // Update the grid using requestAnimationFrame to ensure smoothness
+    function updateBoard(newGrid) {
+        if (!needsUpdate) {
+            needsUpdate = true;
+            window.requestAnimationFrame(() => {
+                gameBoard.innerHTML = '';
+                newGrid.forEach((row, rowIndex) => {
+                    row.forEach((tileValue, colIndex) => {
+                        const tile = document.createElement('div');
+                        tile.classList.add('tile');
+                        if (tileValue > 0) {
+                            tile.textContent = tileValue;
+                            tile.classList.add(`tile-${tileValue}`);
+                        }
+                        gameBoard.appendChild(tile);
+                    });
+                });
+                needsUpdate = false;
+            });
+        }
+    }
+
+    async function initGame() {
+        worker.postMessage({ type: 'init' });
+    }
+
+    async function move(direction) {
+        worker.postMessage({ type: 'move', direction });
+    }
+
+    worker.onmessage = function(e) {
+        const { type, grid, score, gameOver } = e.data;
+        if (type === 'update') {
+            updateBoard(grid);
+            updateScore(score);
+        } else if (type === 'gameOver') {
+            alert('Game Over!');
+        }
+    };
+
+    // Touch controls (optimized)
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchEndX = 0;
+    let touchEndY = 0;
+
+    function handleTouchStart(event) {
+        touchStartX = event.touches[0].clientX;
+        touchStartY = event.touches[0].clientY;
+    }
+
+    function handleTouchMove(event) {
+        touchEndX = event.touches[0].clientX;
+        touchEndY = event.touches[0].clientY;
+    }
+
+    function handleTouchEnd() {
+        const deltaX = touchEndX - touchStartX;
+        const deltaY = touchEndY - touchStartY;
+
+        if (Math.abs(deltaX) > Math.abs(deltaY)) {
+            if (deltaX > 0) {
+                move('right');
+            } else {
+                move('left');
+            }
+        } else {
+            if (deltaY > 0) {
+                move('down');
+            } else {
+                move('up');
+            }
+        }
+    }
+
+    gameBoard.addEventListener('touchstart', handleTouchStart);
+    gameBoard.addEventListener('touchmove', handleTouchMove);
+    gameBoard.addEventListener('touchend', handleTouchEnd);
+
+    // Keyboard controls
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowLeft') move('left');
+        if (e.key === 'ArrowRight') move('right');
+        if (e.key === 'ArrowUp') move('up');
+        if (e.key === 'ArrowDown') move('down');
+    });
+
+    initGame();
+</script>
+
+</body>
+</html>
